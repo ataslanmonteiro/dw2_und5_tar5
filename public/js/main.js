@@ -1,21 +1,32 @@
-document.getElementById("item-form").addEventListener("submit", function (event) {
+const API_URL = "http://localhost:3000/items";
+
+// Adicionar item
+document.getElementById("item-form").addEventListener("submit", async function (event) {
     event.preventDefault();
 
     const name = document.getElementById("name").value;
     const description = document.getElementById("description").value;
 
     if (name && description) {
-        db.insert({ name, description });
+        await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, description })
+        });
+
         populateTable();
         this.reset();
     }
 });
 
-function populateTable() {
+// Listar itens
+async function populateTable() {
     const tableBody = document.getElementById("table-body");
     tableBody.innerHTML = "";
 
-    const items = db.list();
+    const response = await fetch(API_URL);
+    const items = await response.json();
+
     items.forEach(item => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -31,23 +42,30 @@ function populateTable() {
     });
 }
 
-function deleteItem(id) {
-    db.delete(id);
+// Deletar item
+async function deleteItem(id) {
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
     populateTable();
 }
 
-function editItem(id) {
-    const item = db.findById(id);
-    if (item) {
-        const newName = prompt("Novo Nome:", item.name);
-        const newDesc = prompt("Nova Descrição:", item.description);
+// Editar item
+async function editItem(id) {
+    const response = await fetch(`${API_URL}/${id}`);
+    const item = await response.json();
 
-        if (newName && newDesc) {
-            db.update(id, { name: newName, description: newDesc });
-            populateTable();
-        }
+    const newName = prompt("Novo Nome:", item.name);
+    const newDesc = prompt("Nova Descrição:", item.description);
+
+    if (newName && newDesc) {
+        await fetch(`${API_URL}/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName, description: newDesc })
+        });
+
+        populateTable();
     }
 }
 
-// Inicializa a tabela
+// Carregar dados ao iniciar
 populateTable();
